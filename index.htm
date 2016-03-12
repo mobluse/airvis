@@ -2,11 +2,18 @@
 <html>
 <head>
   <title> HACK4SWEDEN - svenska atmosfärsdata </title>
-  <script src="jc/jquery.js"> </script>
+  <xscript src="jc/jquery.js"> </xscript>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+  <script src="//code.jquery.com/jquery-1.10.2.js"></script>
+  <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+  <script>
+    $(function() {
+      $( "#datepicker" ).datepicker();
+    });
+  </script>
   <script src="jc/Chart.js"> </script>
   <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
   <meta charset="utf-8">
-
   <style>
     html, body {
       height: 100%;
@@ -20,7 +27,6 @@
 </head>
 <body>
   <hr>
-
   <table width="820" border="1">
   <tr>
   <td>
@@ -29,6 +35,17 @@
   <td>
   <canvas id="myChart" width="400" height="400"></canvas>
   </td>
+  <td>
+    Date:
+    <input type="text" id="datepicker" name="start">
+    <br> <br>
+    Increment:<br>
+    <select>
+        <option value="h">hours</option>
+        <option value="d">days</option>
+        <option value="w">week</option>
+    </select>
+  </td>
   </tr>
   </table>
 
@@ -36,7 +53,7 @@
     var ctx = document.getElementById("myChart").getContext("2d");
   </script>
 
-<script>
+  <script>
     strokeColors = [
         "rgba(220,220,220,1)", "rgba(151,187,205,1)", "rgba(131,132,220,1)", "rgba(220,187,120,1)", "rgba(120,187,220,1)",
     ];
@@ -75,14 +92,14 @@
                 pointHighlightStroke: strokeColors[i] 
             } );
      }
-</script>
+  </script>
   <script>
     function drawGraph( sid ) {
       var qry = 'select * from air_conc where sid="'+sid+'" limit 10,12';
+
       $.ajax( {
         type : 'POST', dataType : 'json', data : { 'qry' : qry, }, url : 'ajaxSql.php',
         success: function(dta) {
-
         // CO   | NO2  | NOx  | O3   | SO2  
         // 4      5      6      7      8         
         var dsets = [];
@@ -96,7 +113,6 @@
         for ( var j in species ) {
             pointSets[j]['data'] = dsets[j];
         }
-
         var data = {
             labels: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"],
             datasets: pointSets
@@ -120,18 +136,12 @@
   </script>
   <script>
     function initMap() {
-
       var mapCntr = {lat: 60, lng: 16 };
       var map = new google.maps.Map( document.getElementById('map'), { zoom: 4, center: mapCntr } );
-      var markCntr = new google.maps.Marker( { position: mapCntr, map: map, title: 'Click to zoom' });
-      map.addListener('center_changed', function() {
-          window.setTimeout(function() { map.panTo(markCntr.getPosition()); }, 3000); 
-      });
-     
       var mappt = []; 
       $.ajax( {
         type : 'POST', dataType : 'json', url : 'ajaxSql.php',
-        data     : { 'qry': 'select * from air_station limit 0,10' },
+        data     : { 'qry': 'select * from air_station limit 0,100' },
         success  : function(dta) {
            for (i in dta) {
              var itm = dta[i];
@@ -144,17 +154,9 @@
            console.log( "Details: " + desc + "\nError:"+err );
          }
       } );
-
-      markCntr.addListener('click', function() {
-        map.setZoom(8);
-        map.setCenter(marker.getPosition());
-      });
-
     }
   </script>
-
   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCs3Kne7JrQ9MKC0dK-v1fkYePOi0mtMW4&callback=initMap"> </script>
-
 </body>
 </html>
 
