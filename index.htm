@@ -1,9 +1,9 @@
 <!doctype html>
 <html>
 <head>
-  <title> HACK </title>
-
+  <title> HACK4SWEDEN - svenska atmosfärsdata </title>
   <script src="jc/jquery.js"> </script>
+  <script src="jc/Chart.js"> </script>
   <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
   <meta charset="utf-8">
 
@@ -13,42 +13,141 @@
       margin: 0;
       padding: 0;
     }
-    #map {
+    #gph, #map {
       width:400px; height:400px;
     }
   </style>
 </head>
 <body>
+  <hr>
 
+  <table width="820" border="1">
+  <tr>
+  <td>
   <div id="map"></div>
+  </td>
+  <td>
+  <canvas id="myChart" width="400" height="400"></canvas>
+  </td>
+  </tr>
+  </table>
 
   <script>
+    var ctx = document.getElementById("myChart").getContext("2d");
+  </script>
 
-    function initGraph( statid ) {
+<script>
+    strokeColors = [
+        "rgba(220,220,220,1)", "rgba(151,187,205,1)", "rgba(131,132,220,1)", "rgba(220,187,120,1)", "rgba(120,187,220,1)",
+    ];
+    fillColors = [
+        "rgba(220,220,220,0,2)", "rgba(151,187,205,0.2)", "rgba(131,132,220,0.2)", "rgba(220,187,120,0.2)", "rgba(120,187,220,0.2)",
+    ];
+    var generic = {
+        label:       "generic",
+        fillColor:   "rgba(220,220,220,0.2)",
+        strokeColor: "rgba(220,220,220,1)",
+        pointColor:  "rgba(220,220,220,1)",
+        pointStrokeColor:     "#fff",
+        pointHighlightFill:   "#fff",
+        pointHighlightStroke: "rgba(220,220,220,1)",
+        data: []
+     };
+     function genericAssign( overlay ) { // overlay assign
+        var _hsh = {};
+        for ( var key in generic ) {
+            _hsh[key] = overlay[key] || generic[key];
+        }
+        return _hsh;
+     }
+     var species = [ 'CO', 'NO2', 'NOx', 'O3', 'SO2' ];
+     var psets = [];
+     for ( var i in species ) {
+        psets[i] = genericAssign( { label: species[i], fillColor: fillColors[i], strokeColor: strokeColors[i], pointColor: strokeColors[i], pointHighlightStroke: strokeColors[i] } );
+     }
 
+</script>
+  <script>
+    function drawGraph( sid ) {
+      var qry = 'select * from air_conc where sid="'+sid+'" limit 10,12';
+      $.ajax( {
+        type : 'POST', dataType : 'json', data : { 'qry' : qry, }, url : 'ajaxSql.php',
+        success: function(dta) {
+           var CO  = [];     var NO2 = []; var NOx = [];     var O3  = []; var SO2 = [];
+           // CO   | NO2  | NOx  | O3   | SO2  
+           // 4      5      6      7      8 
+
+           var dsets = [];
+           dsets[0] = []; dsets[1] = []; dsets[2] = [];
+           dsets[3] = []; dsets[4] = [];
+           for (i in dta) {
+               var itm = dta[i];
+                for ( var j in species ) {
+                    dsets[1*j].push( itm[(4+1*j)] );
+                    console.log( itm[(4+1*j)] );
+                }
+                CO.push(  itm[4] );
+                NO2.push( itm[5] );
+                NOx.push( itm[6] );
+                O3.push(  itm[7] );
+                SO2.push( itm[8] );
+           }
+
+            for ( var j in species ) {
+                psets[j]['data'] = dsets[j];
+            }
+
+            dCO  =  genericAssign( { label: "CO ", 'data' : dsets[0] } );  
+            dNO2 =  genericAssign( { label: "NO2", 'data' : dsets[1] } );  
+            dNOx =  genericAssign( { label: "NOx", 'data' : dsets[2] } );  
+            dO3  =  genericAssign( { label: "O3 ", 'data' : dsets[3] } );  
+            dSO2 = genericAssign( 
+            {  label: "SO2", 
+               fillColor: "rgba(151,187,205,0.2)", strokeColor: "rgba(151,187,205,1)", pointColor: "rgba(151,187,205,1)", pointHighlightStroke: "rgba(151,187,205,1)",
+               'data' : SO2 } );  
+           alert( SO2 );
+           alert( dsets[4] );
+           var data = {
+            labels: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"],
+            // datasets: [ dCO, dNO2, dNOx, dO3, dSO2 ]
+            datasets: psets
+           };
+           var myLineChart = new Chart(ctx).Line(data, {} );
+         },
+         error: function(xhr, desc, err ) {
+           console.log( xhr);
+           console.log( "Details: " + desc + "\nError:"+err );
+         }
+      } );
     }
-
-
+  </script>
+  <script>
+    function initDrawGraph( sid ) {
+        var _sid = sid;
+        return function() {
+            drawGraph(_sid);
+        }
+    }
+  </script>
+  <script>
     function initMap() {
+
       var mapCntr = {lat: 60, lng: 16 };
       var map = new google.maps.Map( document.getElementById('map'), { zoom: 4, center: mapCntr } );
-
       var markCntr = new google.maps.Marker( { position: mapCntr, map: map, title: 'Click to zoom' });
-
       map.addListener('center_changed', function() {
           window.setTimeout(function() { map.panTo(markCntr.getPosition()); }, 3000); 
       });
      
       var mappt = []; 
       $.ajax( {
-        type: "POST",
-        dataType:"json",
-        url: "stations.php",
-        success: function(data) {
-           for (i in data) {
-             var itm = data[i];
-             mappt[i] = new google.maps.Marker( { position: { lat: 1*itm[2], lng: 1*itm[3] }, map: map, title: itm[1] } );
-             mappt[i].addListener( 'click', function() { initGraph( itm[0] ); } );
+        type : 'POST', dataType : 'json', url : 'ajaxSql.php',
+        data     : { 'qry': 'select * from air_station limit 0,10' },
+        success  : function(dta) {
+           for (i in dta) {
+             var itm = dta[i];
+             mappt[i] = new google.maps.Marker( { position: { lat: 1*itm['lat'], lng: 1*itm['lng'] }, map: map, title: itm['station']+' '+itm['sid'] } );
+             mappt[i].addListener( 'click', initDrawGraph( itm['sid'] ) ); 
            }
          },
          error: function(xhr, desc, err ) {
@@ -61,6 +160,7 @@
         map.setZoom(8);
         map.setCenter(marker.getPosition());
       });
+
     }
   </script>
 
@@ -68,5 +168,4 @@
 
 </body>
 </html>
-
 

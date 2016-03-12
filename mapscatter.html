@@ -1,0 +1,145 @@
+<!doctype html>
+<html>
+<head>
+  <title> HACK4SWEDEN - svenska atmosfärsdata </title>
+  <script src="jc/jquery.js"> </script>
+  <script src="http.js" type="text/javascript" charset="utf-8"></script>
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+  <meta charset="utf-8">
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    #map {
+      width:400px; height:400px;
+    }
+  </style>
+</head>
+<body>
+  <hr>
+  <div id="map"></div>
+  <!--div id="gph"> Graph </div-->
+
+  <script>
+// Create and return a new canvas tag with the specified id and size.
+// Note that this method does not add the canvas to the document
+function makeCanvas(id, width, height) {
+  var canvas = document.createElement("canvas");
+  canvas.id = id;
+  canvas.width = width;
+  canvas.height = height;
+  return canvas;
+}
+
+function scatter(canvas, xList, yList, mark, left, top, width, height, xMin, xMax, yMin, yMax) {
+  // Get the canvas if specified by id
+  if (typeof canvas == "string") canvas = document.getElementById(canvas);
+
+  // We draw with the canvas' drawing context
+  var g = canvas.getContext("2d");
+
+  // All the lines we draw are 2 pixel wide black lines
+  g.lineWidth = 2;
+  g.strokeStyle = "black";
+  g.fillStyle = "lightgreen";
+  g.fillRect(left, top, width, height);
+  g.strokeRect(left, top, width, height);
+
+  g.beginPath();              // Start a new shape
+  for (var i = 0; i < xList.length; ++i) {
+    var lt = (xList[i]-xMin)*width/(xMax-xMin)+left,
+        tp = -(yList[i]-yMin)*height/(yMax-yMin)+top+height;
+    g.moveTo(lt-5, tp);
+    g.lineTo(lt+5, tp);
+    g.moveTo(lt,   tp-5);
+    g.lineTo(lt,   tp+5);
+  }
+  g.closePath();              // End shape
+  g.stroke();                 // Outline ("stroke")
+}
+
+function receive( sid ) {
+  var callback = function (json) {
+    scatter("gph", json.x, json.y, "+", 10, 10, 500, 300, 0, 30000000, 0, 3);
+    //scatter("gph", [0, 23, 34, 60], [12, 23, 34, 55], "+", 10, 10, 500, 300, 0, 60, 0, 60);
+  };
+  HTTP.get("airsid.php?sid="+sid, callback, {});
+}
+
+  </script>
+
+  <script>
+    function drawGraph( sid ) {
+      var qry = 'select * from air_conc where sid="'+sid+'" limit 0,10';
+      $.ajax( {
+        type : 'POST', dataType : 'json', data : { 'qry' : qry, }, url : 'ajaxSql.php',
+        success: function(dta) {
+           console.log(dta);
+           for (i in dta) {
+             var itm = dta[i];
+// function scatter(canvas, xList, yList, mark, left, top, width, height, xMin, xMax, yMin, yMax) {
+// scatter("gph", itm['start'], itm['SO2'], "+", 10, 10, 500, 300, 0, 60, 0, 60);
+           }
+           receive( sid );
+         },
+         error: function(xhr, desc, err ) {
+           console.log( xhr);
+           console.log( "Details: " + desc + "\nError:"+err );
+         }
+      } );
+    }
+  </script>
+  <script>
+    function initDrawGraph( sid ) {
+        var _sid = sid;
+        return function() {
+            drawGraph(_sid);
+        }
+    }
+  </script>
+  <script>
+    function initMap() {
+    // init graph
+      cnv = makeCanvas( "gph", 600, 400 );
+      document.body.appendChild( cnv );
+    // -----------------------
+
+      var mapCntr = {lat: 60, lng: 16 };
+      var map = new google.maps.Map( document.getElementById('map'), { zoom: 4, center: mapCntr } );
+      var markCntr = new google.maps.Marker( { position: mapCntr, map: map, title: 'Click to zoom' });
+      map.addListener('center_changed', function() {
+          window.setTimeout(function() { map.panTo(markCntr.getPosition()); }, 3000); 
+      });
+     
+      var mappt = []; 
+      $.ajax( {
+        type : 'POST', dataType : 'json', url : 'ajaxSql.php',
+        data     : { 'qry': 'select * from air_station limit 0,10' },
+        success  : function(dta) {
+           for (i in dta) {
+             var itm = dta[i];
+             mappt[i] = new google.maps.Marker( { position: { lat: 1*itm['lat'], lng: 1*itm['lng'] }, map: map, title: itm['station']+' '+itm['sid'] } );
+             mappt[i].addListener( 'click', initDrawGraph( itm['sid'] ) ); 
+           }
+         },
+         error: function(xhr, desc, err ) {
+           console.log( xhr);
+           console.log( "Details: " + desc + "\nError:"+err );
+         }
+      } );
+
+      markCntr.addListener('click', function() {
+        map.setZoom(8);
+        map.setCenter(marker.getPosition());
+      });
+
+    }
+  </script>
+
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCs3Kne7JrQ9MKC0dK-v1fkYePOi0mtMW4&callback=initMap"> </script>
+
+</body>
+</html>

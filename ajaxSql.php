@@ -1,5 +1,4 @@
 <?php
-
 header('Content-Type: text/javascript');
 header('Cache-Control: no-cache, must-revalidate');
 header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
@@ -7,17 +6,15 @@ header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
 $db = new mysqli('localhost', 'hack', 'hack', 'hack');
 $db->set_charset('UTF8');
 
-// $sid = $_POST["sid"];
-$qry = $_POST["qry"];
-// $qry = 'select * from air_station limit 0,2';
+$qry = $_REQUEST["qry"];
 $res = $db->query( $qry );
 
-$stations = array();
+$dat = array();
 while ($obj = $res->fetch_array()) {
-  array_push($stations, $obj );
+  array_push($dat, $obj );
 }
 
-echo json_encode( $stations );
+echo json_encode( $dat );
 
 if (isset($rs)) {
   $rs->close();
