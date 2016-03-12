@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+<head>
+  <title> HACK </title>
+
+  <script src="jc/jquery.js"> </script>
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+  <meta charset="utf-8">
+
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    #map {
+      width:400px; height:400px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="map"></div>
+
+  <script>
+
+    function initGraph( statid ) {
+
+    }
+
+
+    function initMap() {
+      var mapCntr = {lat: 60, lng: 16 };
+      var map = new google.maps.Map( document.getElementById('map'), { zoom: 4, center: mapCntr } );
+
+      var markCntr = new google.maps.Marker( { position: mapCntr, map: map, title: 'Click to zoom' });
+
+      map.addListener('center_changed', function() {
+          window.setTimeout(function() { map.panTo(markCntr.getPosition()); }, 3000); 
+      });
+     
+      var mappt = []; 
+      $.ajax( {
+        type: "POST",
+        dataType:"json",
+        url: "stations.php",
+        success: function(data) {
+           for (i in data) {
+             var itm = data[i];
+             mappt[i] = new google.maps.Marker( { position: { lat: 1*itm[2], lng: 1*itm[3] }, map: map, title: itm[1] } );
+             mappt[i].addListener( 'click', function() { initGraph( itm[0] ); } );
+           }
+         },
+         error: function(xhr, desc, err ) {
+           console.log( xhr);
+           console.log( "Details: " + desc + "\nError:"+err );
+         }
+      } );
+
+      markCntr.addListener('click', function() {
+        map.setZoom(8);
+        map.setCenter(marker.getPosition());
+      });
+    }
+  </script>
+
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCs3Kne7JrQ9MKC0dK-v1fkYePOi0mtMW4&callback=initMap"> </script>
+
+</body>
+</html>
+
+
