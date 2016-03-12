@@ -63,18 +63,18 @@
         var _hsh = {};
         assignKey( generic, _hsh );
         return assignKey( overlay, _hsh );
-/*
-        for ( var key in generic ) {
-            _hsh[key] = overlay[key] || generic[key];
-        }
-        return _hsh;*/
      }
      var species = [ 'CO', 'NO2', 'NOx', 'O3', 'SO2' ];
-     var psets = [];
+     var pointSets = [];
      for ( var i in species ) {
-        psets[i] = genericAssign( { label: species[i], fillColor: fillColors[i], strokeColor: strokeColors[i], pointColor: strokeColors[i], pointHighlightStroke: strokeColors[i] } );
+        pointSets[i] = genericAssign( 
+            {   label: species[i], 
+                fillColor: fillColors[i], 
+                strokeColor: strokeColors[i], 
+                pointColor: strokeColors[i], 
+                pointHighlightStroke: strokeColors[i] 
+            } );
      }
-
 </script>
   <script>
     function drawGraph( sid ) {
@@ -82,36 +82,31 @@
       $.ajax( {
         type : 'POST', dataType : 'json', data : { 'qry' : qry, }, url : 'ajaxSql.php',
         success: function(dta) {
-           var CO  = [];     var NO2 = []; var NOx = [];     var O3  = []; var SO2 = [];
-           // CO   | NO2  | NOx  | O3   | SO2  
-           // 4      5      6      7      8 
-        
+
+        // CO   | NO2  | NOx  | O3   | SO2  
+        // 4      5      6      7      8         
         var dsets = [];
-        for ( var j in species ) {
-            dsets[j] = []; 
-        }
+        for ( var j in species ) { dsets[j] = []; }
         for (i in dta) {
             var itm = dta[i];
              for ( var j in species ) {
                  dsets[1*j].push( itm[(4+1*j)] );
-                 console.log( itm[(4+1*j)] );
              }
         }
+        for ( var j in species ) {
+            pointSets[j]['data'] = dsets[j];
+        }
 
-         for ( var j in species ) {
-             psets[j]['data'] = dsets[j];
-         }
-
-         var data = {
-             labels: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"],
-             datasets: psets
-         };
-           var myLineChart = new Chart(ctx).Line(data, {} );
-         },
-         error: function(xhr, desc, err ) {
+        var data = {
+            labels: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"],
+            datasets: pointSets
+        };
+        var myLineChart = new Chart(ctx).Line(data, {} );
+        },
+        error: function(xhr, desc, err ) {
            console.log( xhr);
            console.log( "Details: " + desc + "\nError:"+err );
-         }
+        }
       } );
     }
   </script>
