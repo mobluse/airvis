@@ -53,12 +53,21 @@
         pointHighlightStroke: "rgba(220,220,220,1)",
         data: []
      };
+     function assignKey( a,b ) {
+        for ( var key in a ) {
+            b[key] = a[key]; 
+        }
+        return a;
+     } 
      function genericAssign( overlay ) { // overlay assign
         var _hsh = {};
+        assignKey( generic, _hsh );
+        return assignKey( overlay, _hsh );
+/*
         for ( var key in generic ) {
             _hsh[key] = overlay[key] || generic[key];
         }
-        return _hsh;
+        return _hsh;*/
      }
      var species = [ 'CO', 'NO2', 'NOx', 'O3', 'SO2' ];
      var psets = [];
@@ -76,42 +85,27 @@
            var CO  = [];     var NO2 = []; var NOx = [];     var O3  = []; var SO2 = [];
            // CO   | NO2  | NOx  | O3   | SO2  
            // 4      5      6      7      8 
+        
+        var dsets = [];
+        for ( var j in species ) {
+            dsets[j] = []; 
+        }
+        for (i in dta) {
+            var itm = dta[i];
+             for ( var j in species ) {
+                 dsets[1*j].push( itm[(4+1*j)] );
+                 console.log( itm[(4+1*j)] );
+             }
+        }
 
-           var dsets = [];
-           dsets[0] = []; dsets[1] = []; dsets[2] = [];
-           dsets[3] = []; dsets[4] = [];
-           for (i in dta) {
-               var itm = dta[i];
-                for ( var j in species ) {
-                    dsets[1*j].push( itm[(4+1*j)] );
-                    console.log( itm[(4+1*j)] );
-                }
-                CO.push(  itm[4] );
-                NO2.push( itm[5] );
-                NOx.push( itm[6] );
-                O3.push(  itm[7] );
-                SO2.push( itm[8] );
-           }
+         for ( var j in species ) {
+             psets[j]['data'] = dsets[j];
+         }
 
-            for ( var j in species ) {
-                psets[j]['data'] = dsets[j];
-            }
-
-            dCO  =  genericAssign( { label: "CO ", 'data' : dsets[0] } );  
-            dNO2 =  genericAssign( { label: "NO2", 'data' : dsets[1] } );  
-            dNOx =  genericAssign( { label: "NOx", 'data' : dsets[2] } );  
-            dO3  =  genericAssign( { label: "O3 ", 'data' : dsets[3] } );  
-            dSO2 = genericAssign( 
-            {  label: "SO2", 
-               fillColor: "rgba(151,187,205,0.2)", strokeColor: "rgba(151,187,205,1)", pointColor: "rgba(151,187,205,1)", pointHighlightStroke: "rgba(151,187,205,1)",
-               'data' : SO2 } );  
-           alert( SO2 );
-           alert( dsets[4] );
-           var data = {
-            labels: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"],
-            // datasets: [ dCO, dNO2, dNOx, dO3, dSO2 ]
-            datasets: psets
-           };
+         var data = {
+             labels: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"],
+             datasets: psets
+         };
            var myLineChart = new Chart(ctx).Line(data, {} );
          },
          error: function(xhr, desc, err ) {
