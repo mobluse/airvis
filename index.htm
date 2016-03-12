@@ -8,7 +8,11 @@
   <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
   <script>
     $(function() {
-      $( "#datepicker" ).datepicker();
+      $( "#datepicker" ).datepicker( {
+        changeMonth: true,
+        changeYear: true
+      } );
+      $( "#datepicker" ).datepicker( "option", "dateFormat", "yy-mm-dd" );
     });
   </script>
   <script src="jc/Chart.js"> </script>
@@ -54,6 +58,13 @@
   </script>
 
   <script>
+
+    var aCO;
+    var aNO2;
+    var aNOx;
+    var aO3;
+    var aSO2;
+
     strokeColors = [
         "rgba(220,220,220,1)", "rgba(151,187,205,1)", "rgba(131,132,220,1)", "rgba(220,187,120,1)", "rgba(120,187,220,1)",
     ];
@@ -61,14 +72,7 @@
         "rgba(220,220,220,0,2)", "rgba(151,187,205,0.2)", "rgba(131,132,220,0.2)", "rgba(220,187,120,0.2)", "rgba(120,187,220,0.2)",
     ];
     var generic = {
-        label:       "generic",
-        fillColor:   "rgba(220,220,220,0.2)",
-        strokeColor: "rgba(220,220,220,1)",
-        pointColor:  "rgba(220,220,220,1)",
-        pointStrokeColor:     "#fff",
-        pointHighlightFill:   "#fff",
-        pointHighlightStroke: "rgba(220,220,220,1)",
-        data: []
+        label:       "generic", fillColor:   "rgba(220,220,220,0.2)", strokeColor: "rgba(220,220,220,1)", pointColor:  "rgba(220,220,220,1)", pointStrokeColor:     "#fff", pointHighlightFill:   "#fff", pointHighlightStroke: "rgba(220,220,220,1)", data: []
      };
      function assignKey( a,b ) {
         for ( var key in a ) {
@@ -84,19 +88,21 @@
      var species = [ 'CO', 'NO2', 'NOx', 'O3', 'SO2' ];
      var pointSets = [];
      for ( var i in species ) {
-        pointSets[i] = genericAssign( 
-            {   label: species[i], 
-                fillColor: fillColors[i], 
-                strokeColor: strokeColors[i], 
-                pointColor: strokeColors[i], 
-                pointHighlightStroke: strokeColors[i] 
-            } );
+        pointSets[i] = genericAssign( {   label: species[i], 
+            fillColor: fillColors[i], 
+            strokeColor: strokeColors[i], 
+            pointColor: strokeColors[i], 
+            pointHighlightStroke: strokeColors[i] 
+        } );
      }
   </script>
   <script>
     function drawGraph( sid ) {
-      var qry = 'select * from air_conc where sid="'+sid+'" limit 10,12';
+      // var qry = 'select * from air_conc where sid="'+sid+'" limit 10,12';
 
+      var _start = $("#datepicker").val();
+      var qry = "select cid,sid,start,stop,CO,NO2,NOx,O3,SO2 from air_conc where sid='"+sid+"' && start >'"+_start+"' limit 0,12";
+      console.log( qry );
       $.ajax( {
         type : 'POST', dataType : 'json', data : { 'qry' : qry, }, url : 'ajaxSql.php',
         success: function(dta) {
